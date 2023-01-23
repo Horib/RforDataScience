@@ -1,0 +1,133 @@
+---
+title: "Test"
+author: "RH"
+date: "2023-01-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r}
+# install.packages("tidyverse")
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+# install.packages(c("gapminder", "Lahman", "nycflights13", "palmerpenguins", "wakefield"))
+```
+
+```{r}
+# ?mpg
+
+# les mpg út
+mpg
+```
+
+```{r}
+# filter(mpg, model == "a4")
+# filter(mpg, year == 1999)
+```
+
+
+```{r}
+# filter(mpg, year == 1999)
+```
+
+```{r mpg-plot}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  xlab("Motor stødd") +
+  ylab("Nýtsla á allfaravegi")
+```
+
+```{r}
+# Lesa data inn
+bensinbilar <- read_csv("data/bensinbilar.csv", 
+                        show_col_types = FALSE)
+
+bensinbilar
+
+# Broyt talvu
+bensinbilar <- mutate(bensinbilar, 
+                      # Year = substr(Mdr, 1, 4),
+                      Year = str_sub(Mdr, 1, 4),
+                      Slag = "Bensin")
+
+bensinbilar
+
+# Plotta
+ggplot(bensinbilar) +
+  geom_point(aes(x = Year, y = km_per_l)) +
+  theme(axis.text.x = element_text(angle=90))
+```
+
+```{r}
+# Lesa data inn
+dieselbilar <- read_csv("data/dieselbilar.csv", 
+                        show_col_types = FALSE)
+
+dieselbilar
+
+# Broyt talvu
+dieselbilar <- mutate(dieselbilar, 
+                      # Year = substr(Mdr, 1, 4),
+                      Year = str_sub(Mdr, 1, 4),
+                      Slag = "Diesel")
+
+dieselbilar
+
+# Plotta
+ggplot(dieselbilar) +
+  geom_point(aes(x = Year, y = km_per_l)) +
+  theme(axis.text.x = element_text(angle=90))
+
+```
+
+```{r}
+bilar <- rbind(bensinbilar, dieselbilar)
+
+ggplot(bilar) +
+  geom_point(aes(x = Year, y = km_per_l, shape = Slag, color = Slag)) +
+  theme(axis.text.x = element_text(angle=90))
+
+ggplot(bilar) +
+  geom_boxplot(aes(x = Year, y = km_per_l, shape = Slag, color = Slag)) +
+  theme(axis.text.x = element_text(angle=90))
+
+```
+
+```{r}
+# Finn median
+bilar_median <- bilar %>%
+  group_by(Year, Slag) %>%
+  summarise(km_per_l_median = median(km_per_l))
+
+bilar_median
+
+ggplot(bilar_median) +
+  geom_point(aes(x = Year, y = km_per_l_median, color = Slag)) +
+  theme(axis.text.x = element_text(angle=90))
+
+ggplot(bilar_median) +
+  geom_point(aes(x = Year, y = km_per_l_median, color = Slag)) +
+  theme(axis.text.x = element_text(angle=90)) +
+  facet_wrap(~ Slag, ncol = 1)
+
+```
+
+```{r map_gemo_color}
+p1 <- ggplot(data = mpg) +
+  geom_point(aes(x = displ, y = hwy, color = class))
+
+ggsave("test.pdf",
+       p1,
+       device = pdf)
+```
+
