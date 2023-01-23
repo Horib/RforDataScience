@@ -1,0 +1,69 @@
+---
+title: "Workflow-Basics"
+author: "RH"
+date: "2023-01-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r}
+# install.packages("tidyverse")
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+# install.packages(c("gapminder", "Lahman", "nycflights13", "palmerpenguins", "wakefield"))
+```
+
+```{r}
+1/200*30
+
+```
+
+
+```{r}
+x = 3*4
+x
+
+```
+
+4.4 Exercises
+
+1.
+```{r}
+# my_variable <- 10
+# my_varıable
+# #> Error in eval(expr, envir, enclos): object 'my_varıable' not found
+
+# Typo . i and l not the same
+
+my_variable <- 10
+my_variable
+
+```
+
+2.
+```{r}
+# library(tidyverse)
+
+dota <- mpg
+
+ggplot(dota) +
+  geom_point(aes(x = displ, y = hwy))
+
+filter(mpg, cyl == 8)
+filter(diamonds, carat > 3)
+
+```
+
+3.
+Alt + Shift + K => menu
+
