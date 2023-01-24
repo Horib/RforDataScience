@@ -1,0 +1,180 @@
+---
+title: "Dømi við bildata"
+author: "HG"
+date: "2023-01-22"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(dplyr.summarise.inform = FALSE)
+library(tidyverse)
+
+# set theme used for plotting
+theme_set(theme_bw(base_size = 12))
+
+```
+
+## Dømi (ikki úr bókini) um orkuforbrúk av nýskrásettum bilum í Danmark
+
+```{r}
+
+# EE1: Nyregistrerede personbiler efter energieffektivitet, ejerforhold og drivmiddel
+# https://www.statistikbanken.dk/ee1
+
+# https://www.dst.dk/da/Statistik/nyheder-analyser-publ/nyt/NytHtml?cid=34728
+
+# Les data inn
+bensinbilar <- read_csv("data/bensinbilar.csv",
+                        show_col_types = FALSE)
+
+# Vís innlisin data
+bensinbilar
+
+# Broyt talvu
+bensinbilar <- mutate(bensinbilar,
+                      #Year = substr(Mdr, 1, 4),
+                      Year = str_sub(Mdr, 1, 4),
+                      Slag = "Bensin") 
+# Vís broytta talvu
+bensinbilar
+
+# Plotta 
+ggplot(bensinbilar) +
+  geom_point(aes(x = Year, y = km_per_l)) +
+  theme(axis.text.x=element_text(angle=90))
+
+
+
+```
+
+
+
+```{r}
+
+# Les data inn
+dieselbilar <- read_csv("data/dieselbilar.csv",
+                        show_col_types = FALSE)
+
+# Vís innlisin data
+dieselbilar
+
+# Broyt talvu
+dieselbilar <- mutate(dieselbilar,
+                      #Year = substr(Mdr, 1, 4),
+                      Year = str_sub(Mdr, 1, 4),
+                      Slag = "Diesel") 
+# Vís broytta talvu
+dieselbilar
+
+# Plotta 
+ggplot(dieselbilar) +
+  geom_point(aes(x = Year, y = km_per_l)) +
+  theme(axis.text.x=element_text(angle=90))
+
+
+
+```
+
+```{r}
+
+# Rekkjubind talvurnar saman
+bilar <- rbind(bensinbilar, dieselbilar)
+
+# Plotta sum punktplot
+ggplot(bilar) +
+  geom_point(aes(x = Year, y = km_per_l, shape = Slag, color = Slag)) +
+  theme(axis.text.x=element_text(angle=90))
+
+# Plotta sum boxplot
+ggplot(bilar) +
+  geom_boxplot(aes(x = Year, y = km_per_l, colour = Slag)) +
+  theme(axis.text.x=element_text(angle=90))
+
+```
+
+
+```{r}
+
+# Finn median
+bilar_median <- bilar %>% 
+  group_by(Year, Slag) %>% 
+  summarise(km_per_l_median = median(km_per_l))
+
+# Les median-talvu út
+bilar_median
+
+# Plotta sum punktplot og mappa slag til lit av punktum
+ggplot(bilar_median) +
+  geom_point(aes(x = Year, y = km_per_l_median, colour = Slag)) +
+  theme(axis.text.x=element_text(angle=90))
+
+# Plotta sum facet plot
+ggplot(bilar_median) +
+  geom_point(aes(x = Year, y = km_per_l_median)) +
+  theme(axis.text.x=element_text(angle=90)) +
+  facet_wrap(~ Slag,
+             nrow = 1)
+
+
+```
+
+```{r, fig.width = 7, fig.asp = 0.85, out.width="80%", fig.align="center", fig.cap = "Orkueffektivitetur á nýggjum bilim (EE1: Nyregistrerede personbiler efter energieffektivitet, ejerforhold og drivmiddel https://www.statistikbanken.dk/ee1)."}
+
+# Eyka dømi við bildata
+
+# Plotta sum punktplot og mappa slag til skap av punktum
+ggplot(bilar_median) +
+  geom_point(aes(x = Year, y = km_per_l_median, shape = Slag)) +
+  scale_y_continuous(breaks = seq(12, 28, 2)) +
+  # útkommentera linjuna niðanfyri, um tú vilt sleppa undan gittarlinjum
+  # theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme(axis.text.x=element_text(angle=90)) +
+  xlab("Ár") +
+  ylab("Nýtslu-median (km/l)")
+
+# set mappu til at goyma plot á disk
+setwd("./plots")
+
+# brúka ggsave() til at goyma plot á diski sum pdf
+ggsave(filename = "bilar_median.pdf",
+       device = "pdf")
+
+# brúka ggsave() til at goyma plot á diski sum jpeg
+# ggsave(filename = "bilar_median.jpeg",
+#        device = "jpeg")
+
+# ?ggsave()
+
+# brúka ggsave() til at goyma plot á diski, har tú eisini setur breidd og hædd
+ggsave(filename = "bilar_median_180x160.pdf",
+       device = "pdf", width = 18.0, height = 16.0, units = "cm")
+
+
+
+```
+
+
+```{r}
+
+# Eyka dømir við bildata
+
+# Ger øll punkt reyð, og mappa slag til skap av punktum
+ggplot(bilar_median) +
+  geom_point(aes(x = Year, y = km_per_l_median, shape = Slag), colour="red") +
+  theme(axis.text.x=element_text(angle=90))
+
+# Ger øll punkt reyð við stødd 3 mm, og mappa slag til skap av punktum
+ggplot(bilar_median) +
+  geom_point(aes(x = Year, y = km_per_l_median, shape = Slag), colour="red", size= 3) +
+  theme(axis.text.x=element_text(angle=90))
+
+# Ger øll punkt stødd 3 mm og rund, og mappa slag til lit av punktum
+ggplot(bilar_median) +
+  geom_point(aes(x = Year, y = km_per_l_median, colour = Slag), size=2, shape = 16) +
+  theme(axis.text.x=element_text(angle=90))
+
+
+```

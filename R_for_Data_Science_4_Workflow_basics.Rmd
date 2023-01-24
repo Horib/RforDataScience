@@ -9,18 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE)
 
 options(dplyr.summarise.inform = FALSE)
-```
 
-```{r}
 # install.packages("tidyverse")
-```
-
-```{r}
-library(tidyverse)
-```
-
-```{r}
 # install.packages(c("gapminder", "Lahman", "nycflights13", "palmerpenguins", "wakefield"))
+library(tidyverse)
 ```
 
 ```{r}
