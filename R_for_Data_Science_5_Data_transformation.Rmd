@@ -139,6 +139,7 @@ arrange(flights, dep_delay)
 3
 ```{r}
 # Sort flights to find the fastest (highest speed) flights.
+arrange(flights, desc(distance / air_time))
 
 
 ```
@@ -166,3 +167,33 @@ select(flights, time_hour, air_time, everything())
 ```
 
 5.4.1 Exercises
+
+4.
+```{r}
+select(flights, contains("TIME"))
+
+```
+
+5.5 Add new variables with mutate()
+
+```{r}
+# %/% integer division
+# %% Modular arithmetic - modulus
+
+transmute(flights,
+  dep_time,
+  hour = dep_time %/% 100,
+  minute = dep_time %% 100
+)
+```
+
+5.5.2 Exercises
+```{r}
+transmute(flights,
+          dep_time,
+          dep_time_minutes = (dep_time %/% 100 * 60) + dep_time %% 100,
+          sched_dep_time,
+          sched_dep_time_minutes = (sched_dep_time %/% 100 * 60) + sched_dep_time %% 100
+          )
+```
+
