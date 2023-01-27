@@ -104,4 +104,84 @@ transmute(flights,
 summarise(flights, delay = mean(dep_delay, na.rm = TRUE))
 summarise(flights, delay = mean(dep_delay, na.rm = FALSE))
 ```
+```{r}
+batting <- as_tibble(Lahman::Batting)
+
+batters <- batting %>%
+  group_by(playerID) %>%
+  summarise(
+    ba = sum(H, na.rm = TRUE) / sum(AB, na.rm = TRUE),
+    ab = sum(AB, na.rm = TRUE)
+  )
+
+batters %>%
+  filter(ab > 100) %>%
+  ggplot(mapping = aes(x = ab, y = ba))+
+  geom_point()+
+  geom_smooth(se=FALSE)
+```
+
+```{r}
+x <- seq(10, 1, -1)
+
+x
+
+first(x)
+min(x)
+nth(x, 4)
+nth(x, 11, default = 0)
+last(x)
+
+range(x)
+range(x)[1]
+range(x)[2]
+```
+```{r}
+not_cancelled <- flights %>% 
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+
+not_cancelled %>% 
+  group_by(year, month, day) %>% 
+  summarise(mean = mean(dep_delay))
+```
+
+
+```{r}
+maxima_departure_times <- 
+  not_cancelled %>%
+  group_by(year, month, day) %>%
+  mutate(r = min_rank(desc(dep_time))) %>%
+  filter(r %in% range(r)) %>%
+  
+  # select(r, everything())
+  select(-r)
+
+arrange(maxima_departure_times, year, month, day, dep_time)
+```
+
+```{r}
+min_departure_times <- 
+  not_cancelled %>%
+  group_by(year,month,day)%>%
+  slice_min(dep_time, n=1)
+
+min_departure_times
+
+
+max_departure_times <- 
+  not_cancelled %>%
+  group_by(year,month,day)%>%
+  slice_max(dep_time, n=1)
+
+max_departure_times
+
+
+minmax_departure_times <- 
+  rbind(min_departure_times, max_departure_times)
+
+arrange(minmax_departure_times, year, month, day, dep_time)
+
+setdiff(maxima_departure_times, minmax_departure_times)
+
+```
 
