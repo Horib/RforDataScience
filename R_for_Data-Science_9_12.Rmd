@@ -1,0 +1,146 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE)
+
+options(dplyr.summarise.inform = FALSE)
+
+# install.packages("tidyverse")
+# install.packages(c("gapminder", "Lahman", "nycflights13", "palmerpenguins", "wakefield"))
+
+library(nycflights13)
+library(hms)
+library(tidyverse)
+```
+
+##10. Tibbles
+```{r}
+tibble(
+  x = 1:5, 
+  y = 1, 
+  z = x ^ 2 + y
+)
+```
+
+
+```{r}
+
+
+tribble(
+  ~x, ~y, ~z,
+  "a", 2, 3.6,
+  "b", 1, 2
+)
+
+```
+
+```{r}
+tibble(
+  a = lubridate::now() + runif(1e3) * 86400,
+  b = lubridate::today() + runif(1e3) * 30,
+  c = 1:1e3,
+  d = runif(1e3),
+  e = sample(letters, 1e3, replace = TRUE)
+)
+
+```
+
+```{r}
+# View(flights)
+# glimpse(flights)
+```
+
+```{r}
+# nycflights13::flights %>%
+#   View()
+```
+
+```{r}
+# Subsetting
+
+tb <- tibble(
+  x = runif(5),
+  y = rnorm(5)
+)
+tb
+
+# Extract by name
+tb$x
+tb[["x"]]
+
+# Extract by position
+tb[[1]]
+```
+
+```{r}
+tb
+# First element
+tb$x[1]
+tb[1,1]
+
+# Three first
+tb$x[1:3]
+
+# only first and third
+tb$x[c(1,3)]
+
+
+```
+
+```{r}
+# Some older functions don't work with tibble, if so use as.data.frame()
+
+class(tb)
+
+class(as.data.frame(tb))
+# > [1] "data.frame"
+
+df_xy <- as.data.frame(tb)
+df_xy
+
+```
+
+## 11 Data import
+```{r}
+heights <- read_csv("data/heights.csv")
+heights
+
+heights2 <- read_csv("https://raw.githubusercontent.com/hadley/r4ds/main/data/heights.csv")
+heights2
+
+```
+
+```{r}
+parse_date("1 oktober 2015", "%d %B %Y", locale = locale("fo"))
+
+parse_date("1 jan 2015", "%d %b %Y", locale = locale("fo"))
+
+parse_date("1 jan 15", "%d %b %y", locale = locale("fo"))
+```
+
+```{r}
+challenge <- read_csv(readr_example("challenge.csv"))
+
+problems(challenge)
+challenge
+
+tail(challange)
+
+```
+
+```{r}
+# challenge <- read_csv(
+#   readr_example("challenge.csv"), 
+#   col_types = cols(
+#     x = col_double(),
+#     y = col_logical()
+#   )
+# )
+# 
+# problems(challenge)
+```
+
+## 12 Tidy ata

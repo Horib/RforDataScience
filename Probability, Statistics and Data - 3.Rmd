@@ -1,0 +1,383 @@
+---
+title: "Probability, Statistics and Data - 3"
+author: "RH"
+date: "2023-02-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(dplyr.summarise.inform = FALSE)
+
+
+library(tidyverse)
+
+# set theme used for plotting
+theme_set(theme_bw(base_size = 12))
+```
+
+```{r}
+litterpmf <- c(0.18, 0.51, 0.27, 0.04)
+sample(1:4, 30, replace = TRUE, prob = litterpmf)
+
+X <- sample(1:4, 10000, replace = TRUE, prob = litterpmf)
+mean(X > 1)
+
+pmf <- 
+  tibble(
+    x = 1:4,
+    `p(x)`= table(x) / 10000
+    )
+pmf
+
+table(x)
+
+```
+```{r}
+coin_toss <- sample(c("H", "T"), 3, replace = TRUE)
+coin_toss
+
+sum(coin_toss == "H")
+
+X <- replicate(10000, {
+  coin_toss <- sample(c("H", "T"), 3, replace = TRUE)
+  sum(coin_toss == "H")
+})
+head(X, 30) # see the first 30 values of X
+
+
+pmf <- 
+  tibble(
+  x = 0:3,
+  `Simulate p(x)` = table(X) / 10000,
+  `Theory p(x)` = choose(3,x)*(0.5)^(3)
+)
+pmf
+```
+
+```{r}
+X_H <- sample(0:3, 10000, replace = TRUE, prob = c(0.125, 0.375, 0.375, 0.125))
+
+pmf <-
+  tibble(
+    x_H = 0:3,
+    `Simulated p(x)` = table(X_H) / 10000,
+    `Theory p(x)` = choose(3, x_H)/8
+  )
+pmf
+```
+
+
+```{r}
+mean(X_H)
+```
+## 3.2 - 12
+```{r}
+rolls <- sample(1:6, 30, replace = TRUE)
+# rolls
+mean(rolls)
+
+rolls <- sample(1:6, 100000, replace = TRUE)
+# rolls
+mean(rolls)
+```
+
+```{r}
+# analytical
+litterpmf <- c(0.18, 0.51, 0.27, 0.04)
+sum((1:4) * litterpmf)
+
+# simulated
+X <- sample(1:4, 10000, replace = TRUE, prob = litterpmf)
+mean(X)
+```
+
+```{r}
+X_H <- replicate(10000, {
+  coin_toss <- sample(c("H", "T"), 3, replace = TRUE)
+  sum(coin_toss == "H")
+})
+
+pmf <-
+  tibble(
+    x = 0:3,
+    `Theory p(x)` = choose(3, x)/8,
+    `Simulated p(x)` = table(X_H) / 10000
+  )
+pmf
+
+mean_heads <-
+  tibble(
+    `Theory E(x)` = sum(pmf$x * pmf$`Theory p(x)`),
+    `Simulated E(x)` = mean(X_H),
+  )
+mean_heads
+
+```
+
+## 3.2.13
+```{r}
+xs <- 0:99
+sum(xs * (0.5)^(xs + 1))
+```
+
+## 3.2
+# 3.3.1 Binomial
+```{r}
+x <- 0:3
+dbinom(x, size = 3, prob = 0.5)
+
+x <- 1:2
+dbinom(x, size = 3, prob = 0.5)
+sum(dbinom(x, size = 3, prob = 0.5))
+```
+```{r}
+p <- 0.5
+x_values <- 0:100
+
+pdata_n10 <- tibble(x = x_values,
+                    n = 10,
+                    y = dbinom(x_values, n, p))
+
+pdata_n20 <- tibble(x = x_values,
+                    n = 20,
+                    y = dbinom(x_values, n, p))
+
+pdata_n50 <- tibble(x = x_values,
+                    n = 50,
+                    y = dbinom(x_values, n, p))
+
+pdata_n100 <- tibble(x = x_values,
+                    n = 100,
+                    y = dbinom(x_values, n, p))
+
+pdata_n <- rbind(pdata_n10,
+                 pdata_n20,
+                 pdata_n50,
+                 pdata_n100)
+
+ggplot() +
+  geom_bar(data=pdata_n, aes(x, y), stat = "identity") +
+  ylab("pmf") +
+  facet_wrap(~ n, labeller = label_both) #+
+  # coord_cartesian(xlim = c(0, 50))
+```
+
+```{r}
+n <- 100
+x_values <- 0:100
+
+pdata_p02 <- tibble(x = x_values,
+                    p = 0.2,
+                    y = dbinom(x_values, n, p))
+
+pdata_p05 <- tibble(x = x_values,
+                    p = 0.5,
+                    y = dbinom(x_values, n, p))
+
+pdata_p07 <- tibble(x = x_values,
+                    p = 0.7,
+                    y = dbinom(x_values, n, p))
+
+pdata_p095 <- tibble(x = x_values,
+                    p = 0.95,
+                    y = dbinom(x_values, n, p))
+
+pdata_p <- rbind(pdata_p02,
+                 pdata_p05,
+                 pdata_p07,
+                 pdata_p095)
+
+ggplot() +
+  geom_bar(data=pdata_p, aes(x, y), stat = "identity") +
+  ylab("pmf") +
+  facet_wrap(~ p, labeller = label_both)
+```
+
+```{r}
+sum(dbinom(0:10, 100, 1 / 6))
+
+# tað sama sum sum(dbinom) roknar tað bara summin beinavegin
+pbinom(10, 100, 1/6)
+
+```
+
+```{r}
+# Example 3.21
+
+n <- 300
+p <- 0.46
+
+E_x <- n*p
+E_x
+
+# pbinom(150, 300, 0.46)
+
+# tvs at tað er ca 7% at veljarakanningin sigur skeivt.
+1 - pbinom(150, 300, 0.46)
+
+```
+
+```{r}
+#  we can compute P(x > 150) by simulation
+
+rbinom(15, size = 300, prob = 0.46)
+
+x <- rbinom(10000, 300, 0.46)
+mean(x > 150)
+
+mean(x)
+```
+# 3.3.2 Geometric
+```{r}
+1 - (1/6)*(1+5/6+(5/6)^2)
+1 - sum(dgeom(0:2, 1/6))
+1 - pgeom(2, 1/6)
+pgeom(2, 1/6, lower.tail = FALSE)
+
+# Finally, we can use sumulation to approximate the result:
+x <- rgeom(10000, 1/6)
+mean(x >= 3)
+```
+
+```{r}
+x_values <- 0:20
+
+pdata_p01 <- tibble(x = x_values,
+                    p = 0.1,
+                    y = dgeom(x,p),
+                    pgeom = pgeom(x,p),
+                    pgeom_rtail = 1 - pgeom(x,p))
+
+
+pdata_p02 <- tibble(x = x_values,
+                    p = 0.2,
+                    y = dgeom(x,p),
+                    pgeom = pgeom(x,p),
+                    pgeom_rtail = 1 - pgeom(x,p))
+
+pdata_p05 <- tibble(x = x_values,
+                    p = 0.5,
+                    y = dgeom(x,p),
+                    pgeom = pgeom(x,p),
+                    pgeom_rtail = 1 - pgeom(x,p))
+
+
+pdata_p08 <- tibble(x = x_values,
+                    p = 0.8,
+                    y = dgeom(x,p),
+                    pgeom = pgeom(x,p),
+                    pgeom_rtail = 1 - pgeom(x,p))
+
+pdata_p <- rbind(pdata_p01,
+                 pdata_p02,
+                 pdata_p05,
+                 pdata_p08)
+
+ggplot(data=pdata_p, ) +
+  geom_bar(aes(x, y), stat = "identity") +
+  # geom_bar(aes(x, y, fill = "dgeom(x, p)"), stat = "identity") +
+  geom_line(aes(x, pgeom, colour = "a. pgeom(x, p)")) +
+  geom_line(aes(x, pgeom_rtail, colour = "b. 1 - pgeom(x, p)")) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2))+
+  scale_x_continuous(breaks = seq(0, max(x_values), 2))+
+  ylab("pmf") +
+  facet_wrap(~ p, labeller = label_both)
+
+```
+
+```{r}
+
+p <- 0.1
+q <- 1 - p
+q/p
+
+# what is the probabillity that he misses the basket 4 .....
+1-pgeom(19, 0.1)
+pgeom(4, 0.1)
+```
+
+# 3.4 Functions of a random variable
+
+```{r}
+X <- sample(1:6, 10000, replace = TRUE)
+mean(X^2)
+```
+
+```{r}
+x <- 0:3
+sum((x - 1.5)^2 * dbinom(x, 3, 0.5))
+```
+
+## 3.5 Variance, standard deviation, and independance
+```{r}
+X <- sample(1:6, 100000, replace = TRUE)
+var(X)
+sd(X)
+```
+
+```{r}
+# 3.33
+# n <- 3
+# p <- 0.5
+# 
+# mu <- n*p
+
+
+```
+
+## 3.6 Poisson, negative binomial, and hypergeometric
+
+```{r}
+x_values <- 0:40
+
+pdata_l02 <- tibble(x = x_values,
+                    lambda = 0.2,
+                    y = dpois(x,lambda),
+                    ppois = ppois(x,lambda),
+                    ppois_rtail = 1 - ppois(x,lambda))
+
+
+pdata_l1 <- tibble(x = x_values,
+                    lambda = 1,
+                    y = dpois(x,lambda),
+                    ppois = ppois(x,lambda),
+                    ppois_rtail = 1 - ppois(x,lambda))
+
+pdata_l5 <- tibble(x = x_values,
+                    lambda = 5,
+                    y = dpois(x,lambda),
+                    ppois = ppois(x,lambda),
+                    ppois_rtail = 1 - ppois(x,lambda))
+
+
+pdata_l10 <- tibble(x = x_values,
+                    lambda = 10,
+                    y = dpois(x,lambda),
+                    ppois = ppois(x,lambda),
+                    ppois_rtail = 1 - ppois(x,lambda))
+
+# pdata_l25 <- tibble(x = x_values,
+#                     lambda = 25,
+#                     y = dpois(x,lambda),
+#                     ppois = ppois(x,lambda),
+#                     ppois_rtail = 1 - ppois(x,lambda))
+
+pdata_lambda <- rbind(pdata_l02,
+                 pdata_l1,
+                 pdata_l5,
+                 pdata_l10)
+                 # pdata_l25)
+
+ggplot(data=pdata_lambda, ) +
+  geom_bar(aes(x, y), stat = "identity") +
+  # geom_bar(aes(x, y, fill = "dpois(x, lambda)"), stat = "identity") +
+  geom_line(aes(x, ppois, colour = "a. ppois(x, lambda)")) +
+  geom_line(aes(x, ppois_rtail, colour = "b. 1 - ppois(x, lambda)")) +
+  scale_y_continuous(breaks = seq(0, 1, 0.2))+
+  scale_x_continuous(breaks = seq(0, max(x_values), 5))+
+  ylab("pmf") +
+  facet_wrap(~ lambda, labeller = label_both)
+```
+
