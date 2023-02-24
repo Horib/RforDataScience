@@ -413,3 +413,51 @@ ggplot() +
 
 ```
 
+```{r}
+# Example 5.15
+
+Z <- rnorm(10000)
+hist(Z^2,
+  probability = T,
+  xlab = expression(Z^2)
+)
+curve(dchisq(x, df = 1), add = TRUE, col = "red")
+
+# EXAMPLE IN TIDYVERSE
+# Z_sq
+```
+
+```{r}
+# Example 5.16
+
+W <- replicate(10000, {
+  X <- rexp(1, 2)
+  Y <- rexp(1, 2)
+  X + Y
+})
+
+hist(W,
+  probability = TRUE,
+  main = "Sum of exponentials is gamma",
+  xlab = "X + Y",
+  ylim = c(0, .72) # so the top of the curve is not clipped
+)
+curve(dgamma(x, shape = 2, rate = 2), add = TRUE, col = "red")
+
+# EXAMPLE IN TIDYVERSE
+gammadata <- tibble(
+  x = seq(0, 10, 0.1),
+  y = dgamma(x, shape = 2, rate = 2)
+)
+
+
+ggplot() +
+  geom_histogram(mapping = aes(x = W, y = after_stat(density)),
+                 binwidth = 0.5, color = "black", fill = "lightgray") +
+  geom_line(data=gammadata, aes(x = x, y = y), color = "red")
+```
+
+```{r}
+
+```
+
