@@ -1,0 +1,251 @@
+---
+title: "Probability, Statistics and Data - 4"
+author: "RH"
+date: "2023-02-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(dplyr.summarise.inform = FALSE)
+
+
+library(tidyverse)
+
+# set theme used for plotting
+theme_set(theme_bw(base_size = 12))
+```
+
+```{r}
+exp_tb <- tibble(
+  x = seq(0,3,0.01),
+  y=exp(-x)
+)
+
+ggplot(exp_tb) +
+  geom_area(data=filter(exp_tb, x >= 1, x <=2),
+            aes(x = x, y = y),
+            fill = "lightblue") +
+  geom_line(aes(x = x, y = y))
+
+
+# Numerical integration with R
+
+# Define the function
+f_x <- function(x) {exp(-x)}
+
+# Find P(1 <= x <= 2)
+# Integrate the function for x between 1 and 2
+P1_2 <- integrate(f_x, lower = 1, upper = 2)
+
+## Hugsa at deila vi 1, tvs man hyggur at allari linjuni.
+P1_2$value
+
+# Read out the integrate value and the abs. error
+#tibble(
+#  value = P1_2
+#)
+
+# Find P(x >= 1 | x <= 2) = P(1 <= x <= 2) / P(x <= 2)
+P1_2 <- integrate(f_x, lower = 1, upper = 2)
+P0_2 <- integrate(f_x, lower = 0, upper = 2)
+
+# P(x >= 1 ). ....
+## Hvar hettar deilist við tann parting vit eru áhugaði í.
+P1_2$value/P0_2$value
+```
+
+```{r}
+# Example 4.7
+
+tb_dunif <- tibble(
+  x = seq(-0.5, 1.5, 0.0001),
+  y = dunif(x),
+  label = "pdf: dunif"
+)
+
+tb_punif <- tibble(
+  x = seq(-0.5, 1.5, 0.0001),
+  y = punif(x),
+  label = "cdf: punif"
+)
+
+tb_unif <- 
+  rbind(
+    tb_dunif,
+    tb_punif
+  )
+
+ggplot(tb_unif) +
+  geom_line(aes(x = x, y = y)) +
+  facet_wrap(~ label, 
+             ncol= 1) +
+  scale_x_continuous(breaks=seq(-0.5, 1.5, 0.1)) +
+  scale_y_continuous(breaks=seq(0, 1, 0.2)) +
+  ylab("")
+```
+
+```{r}
+# simulate probabilities
+x <- runif(10000)
+mean(x > 0.3)
+
+mean(0.2 < x & x < 0.5)
+
+```
+
+```{r}
+# Example in book, 4.8... ?
+
+X <- runif(10000, 0, 1)
+Y <- runif(10000, 0, 1)
+
+tibble(
+  x = X, 
+  y = Y, 
+  W = pmax(x,y)
+)
+
+# pmax is the parallel version of max
+W <- pmax(X, Y)
+mean(W < 2/3)
+
+# P(W < 2/3)=
+(2/3)^2
+```
+
+```{r}
+# Figure 4.6 shows examples of normal distributions with fixed mean mu = 0 and various value of the standard deviation sigma.
+
+ndata <- NULL
+sigma_vec <- c(0.5, 1, 2, 4)
+for (i in sigma_vec) {
+  tb_data <- NULL
+  tb_data <- tibble(
+    mu = 0,
+    sigma = i,
+    x = seq(-10, 10, 0.01),
+    y = dnorm(x, mu, sigma),
+    pnorm = pnorm(x, mu, sigma)
+  )
+  ndata <- rbind(ndata, tb_data)
+}
+# ndata
+
+ggplot(ndata) +
+  # geom_bar(aes(x, y), stat = "identity", width = 0.01) +
+  geom_line(aes(x, y, color = "a. dnorm(x, mu = 0, sigma)")) +
+  geom_line(aes(x, pnorm, color ="b. pnorm(x, mu = 0, sigma)")) +
+  ylab("pdf") +
+  facet_wrap(~ sigma, labeller = label_both)
+
+```
+
+```{r}
+# Figure 4.7 shows examples of normal distributions with fixed sigma = 1 and various values of mu.
+
+ndata <- NULL
+mu_vec <- c(-4, 0, 2, 7)
+for (i in mu_vec) {
+  tb_data <- NULL
+  tb_data <- tibble(
+    mu = i,
+    sigma = 1,
+    x = seq(-10, 20, 0.01),
+    y = dnorm(x, mu, sigma),
+    pnorm = pnorm(x, mu, sigma)
+  )
+  ndata <- rbind(ndata, tb_data)
+}
+# ndata
+
+ggplot(ndata) +
+  # geom_bar(aes(x, y), stat = "identity", width = 0.01) +
+  geom_line(aes(x, y, color = "a. dnorm(x, mu, sigma = 1)")) +
+  geom_line(aes(x, pnorm, color ="b. pnorm(x, mu, sigma = 1)")) +
+  ylab("pdf") +
+  facet_wrap(~ mu, labeller = label_both)
+
+```
+
+```{r}
+# Example 4.22
+
+# what percentage of dog pregnancies last 60 days or fewer?
+pnorm(60, 63, 2)
+
+# What percentage of dog pregnancies last 67 days or more?
+1 - pnorm(67, 63, 2)
+
+# what range covers the shortest 90% of dog pregnancies?
+qnorm(0.90, 63, 2)
+
+# what is the narrowest range of times that covers 90% of the dog pregnancies
+qnorm(0.05, 63, 2)
+qnorm(0.95, 63, 2)
+
+dog_data <- tibble(x = seq(50, 75, 0.01),
+                   mu = 63,
+                   sigma = 2,
+                   y = dnorm(x, mu, sigma))
+ggplot(dog_data) +
+  geom_area(data=filter(dog_data,
+                        x >= qnorm(0.05, 63, 2),
+                        x <= qnorm(0.95, 63, 2)),
+            aes(x = x, y = y),
+            fill = "lightblue") +
+  geom_line(aes(x, y)) +
+  ylab("pdf")
+```
+
+```{r}
+
+Z <- rnorm(10000, )
+```
+
+```{r}
+# Example 4.24
+
+# what is the probability that 3 or more of the women are 68 inces (5 foot, 8 inches) or taller?
+pnorm(68, 65, 2.25, lower.tail = FALSE)
+1 - pnorm(68, 65, 2.25)
+
+# ...
+sum(dbinom(3:7, 7, 0.09121122))
+1 - pbinom(2, 7, 0.09121122)
+
+# How likely is it that ethe team has no players who are 68 inches or taller
+dbinom(0, 7, 0.09121122)
+```
+
+```{r}
+X <- rnorm(10000, 0, 3)
+Y <- rnorm(10000, 0, 3)
+d <- sqrt(X^2 + Y^2)
+mean(d)
+```
+
+```{r}
+ndata <- NULL
+rate_vec <- c(0.5, 1, 2, 4)
+for (i in rate_vec) {
+  tb_data <- NULL
+  tb_data <- tibble(
+    rate = i,
+    x = seq(0, 10, 0.01),
+    y = dexp(x, rate),
+    pexp = pexp(x, rate)
+  )
+  ndata <- rbind(ndata, tb_data)
+}
+# ndata
+
+ggplot(ndata) +
+  geom_line(aes(x, y, color = "a. dexp(x, rate)")) +
+  # geom_line(aes(x, pexp, color ="b. pexp(x, rate)")) +
+  ylab("pmf") +
+  facet_wrap(~ rate, labeller = label_both)
+
+```
+

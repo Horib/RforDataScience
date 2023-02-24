@@ -1,0 +1,415 @@
+---
+title: "Probability, Statistics and Data - 5"
+author: "RH"
+date: "2023-02-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(dplyr.summarise.inform = FALSE)
+
+
+library(tidyverse)
+
+# set theme used for plotting
+theme_set(theme_bw(base_size = 12))
+```
+
+## 5.1 Estimating probabilities
+
+```{r}
+## Exmaple 5.1
+
+Z <- rnorm(10000)
+head(Z)
+
+head(Z,10)
+
+bigZ <- (Z > 1)
+head(bigZ)
+
+sum(bigZ == TRUE) / 10000
+sum(bigZ) / 10000
+
+mean(bigZ)
+mean(Z > 1)
+```
+
+```{r}
+sample_size <- 10000
+
+nrv <- 
+  tibble(Z = rnorm(sample_size),
+         big_z = (Z >1))
+
+nrv
+
+nrv_mean <- 
+  tibble(
+    n = sample_size,
+    `P(Z > 1)` = mean(nrv$big_z)
+  )
+
+# útles úrskut
+nrv_mean$`P(Z > 1)`
+
+# útless tibble
+nrv_mean
+```
+```{r}
+# Example 5.2
+
+Z <- rnorm(10000)
+mean(Z^2 > 1)
+
+```
+
+```{r}
+# Example 5.3
+
+Z <- rnorm(10000)
+mean(Z)
+
+sd(Z)
+```
+
+```{r}
+# Example 5.4
+
+Z <- rnorm(10000)
+mean(Z)
+
+sd(Z^2)
+```
+
+```{r}
+# Example 5.5
+
+X <- rnorm(10000)
+Y <- rnorm(10000)
+mean(X * Y > 1)
+
+W <- rnorm(10000) * rnorm(10000)
+mean(W > 1)
+```
+## 5.2 Estimating discrete distributions
+```{r}
+# Example 5.6
+
+X <- replicate(10000,{
+  dieRoll <- sample(1:6, 2, TRUE)
+  sum(dieRoll)
+})
+mean(X == 5)
+
+# Telur upp hvussu nógv er av hvørjum
+table(c(1,1,1,1,1,2,2,3,5,1))
+
+X <- replicate(10000,{
+  dieRoll <- sample(1:6, 2, TRUE)
+  sum(dieRoll)
+})
+table(X)
+
+# Fært tað út í %
+table(X) / 10000
+
+proportions(table(X))
+
+```
+
+```{r}
+sample_size <- 10000 
+
+sum_dice <- replicate(sample_size, {
+  dieRoll <- sample(1:6, 2, TRUE)
+  sum(dieRoll)
+})
+two_dice <- tibble(
+  sum = as_factor(sum_dice))
+two_dice
+
+ggplot(two_dice) +
+  geom_bar(mapping = aes(x = sum))
+```
+
+```{r}
+# Example 5.7
+
+# Sample 
+birthdays <- sample(1:365, 50, replace = TRUE)
+
+# tel hvussu  
+table(birthdays)
+
+# 
+table(birthdays) > 1
+
+# 
+table(birthdays)[table(birthdays) > 1]
+
+# rokna samlað antal av persónum við sama føðingardegi fyri eina samling av 60
+sum(table(birthdays)[table(birthdays) > 1])
+
+#  replicekrea samlingina og útrokna
+total_same <- replicate(10000, {
+  birthdays <- sample(1:365, 50, replace = TRUE)
+  sum(table(birthdays)[table(birthdays) > 1])
+})
+
+# total_same
+# pmf <- proportions(table(total_same))
+# pmf
+
+```
+
+```{r}
+# Exmaple 5.7 (continued)
+
+# ger tibble við úrslitinum frá simulatiónini
+simulation <- tibble(
+  same_bd = factor(total_same, levels = seq(0,50))
+)
+simulation
+
+# plot av fordeilingini av same_bd - count
+ggplot(simulation) +
+  geom_bar(mapping = aes(x = same_bd))
+
+# plot av fordeilingini av same_bd - prop
+ggplot(simulation) +
+  geom_bar(mapping = aes(x = same_bd, y = after_stat(prop), group = 1))
+
+```
+
+```{r}
+# Example 5.8
+# You toss a coin 100 times. After each toss, either there have been more heads, more tails, or the same number of heads and tails. Let X be the number of times in the 100 tosses that there were more heads than tails. Estimate the pmf of X
+
+# flip 100 coins
+coin_flips <- sample(c("H", "T"), 100, replace = TRUE)
+coin_flips[1:10]
+
+# calculate the cumulative number of heads or tails so far
+num_heads <- cumsum(coin_flips == "H")
+num_tails <- cumsum(coin_flips == "T")
+num_heads[1:10]
+
+num_tails[1:10]
+
+# calculate the number of times there were more heads than tails
+sum(num_heads > num_tails)
+
+flip_100 <- replicate(100000, {
+  coin_flips <- sample(c("H", "T"), 100, replace = TRUE)
+  num_heads <- cumsum(coin_flips == "H")
+  num_tails <- cumsum(coin_flips == "T")
+  sum(num_heads > num_tails)
+})
+# pmf <- proportions(table(X))
+# pmf
+
+
+# ger tibble
+simulation <- tibble(
+  more_heads = factor(flip_100, levels = seq(0,100))
+)
+simulation
+
+# .... plotta manglar
+```
+
+```{r}
+# Example 5.9
+
+# Suppose you have a bag full of marbles; 50 are red and 50 are blue. You are standing on a number line, and you draw a marble out of the bag. If you get red, you go left one unit. If you get blue, you go right one unit. This is called a random walk. You draw marbles up to 100 times, each time moving left or right one unit. Let X be the number of marbles drawn from the bag until you return to 0 for the first time. The rv X is called the first return time since it is the number of steps it takes to return to your starting position.
+
+
+# Estimate the pmf of X.
+# First, simulate the steps of the walk, with 1 and -1 representing steps right and left.
+movements <- sample(rep(c(1, -1), times = 50), 100, replace = FALSE)
+movements[1:10]
+
+cumsum(movements)[1:10]
+
+which(cumsum(movements[1:10]) == 0)
+which(cumsum(movements) == 0)
+
+min(which(cumsum(movements) == 0))
+
+
+# EXAMPLE IN BOOK
+# X <- replicate(10000, {
+#   movements <- sample(rep(c(1, -1), times = 50), 100, replace = FALSE)
+#   min(which(cumsum(movements) == 0))
+# })
+# pmf <- proportions(table(X))
+# plot(pmf,
+#   main = "First return time for a 100 step random walk",
+#   xlab = "Steps to return",
+#   ylab = "Probability"
+# )
+
+
+# EXAMPLE IN TIDYVERSE
+first_rt <- replicate(10000, {
+  movements <- sample(rep(c(1, -1), times = 50), 100, replace = FALSE)
+  min(which(cumsum(movements) == 0))
+})
+
+# ger tibble við úrslitinum frá simulatiónini
+simulation <- tibble(
+  steps = factor(first_rt, levels = seq(2, 100))
+)
+simulation
+
+#  plot av fordeilingini - count
+ggplot(simulation) +
+  geom_bar(mapping = aes(x = steps)) +
+  scale_x_discrete(breaks = seq(2, 100, 4))
+
+# plot av fordeilingini - prop
+ggplot(simulation) +
+  geom_bar(mapping = aes(x = steps, y = after_stat(prop), group = 1)) +
+  scale_x_discrete(breaks = seq(2, 100, 4))
+```
+
+# 5.3 Estimating continuous distributions
+
+```{r}
+# Examploe 5.10
+
+# EXAMPLE IN BOOK
+Z <- rnorm(10000)
+twoZ <- 2*Z
+
+# plot(density(twoZ),
+#   main = "Density of 2Z",
+#   xlab = "2Z"
+# )
+
+# hist(twoZ,
+#   probability = TRUE,
+#   main = "Histogram of 2Z",
+#   xlab = "2Z"
+# )
+
+# EXAMPLE IN TIDYVERSE
+Z <- rnorm(10000)
+two_Z <- 2*Z
+
+ggplot() +
+  geom_histogram(mapping = aes(x = two_Z, y = after_stat(density)),
+                               binwidth = 1, color = "black", fill = "lightgray") +
+  geom_density(aes(x=two_Z))
+
+```
+
+```{r}
+# Example 5.11
+
+# EXAMPLE IN BOOK
+hist(twoZ,
+  probability = TRUE,
+  main = "Density and histogram of 2Z",
+  xlab = "2Z"
+)
+curve(dnorm(x, 0, 2), add = TRUE, col = "red")
+
+plot(density(twoZ),
+  xlab = "2Z",
+  main = "Density 2Z and Norm(0, 2)"
+)
+curve(dnorm(x, 0, 2), add = TRUE, col = "red")
+
+# EXAMPLE IN TIDYVERSE
+ndata <- tibble(
+  x = seq(-10, 10, 0.1),
+  y = dnorm(x, 0, 2)
+)
+
+# Histogram and denisty of 2z
+ggplot() +
+  geom_histogram(mapping = aes(x = two_Z, y = after_stat(density)),
+                               binwidth = 1, color = "black", fill = "lightgray") +
+  geom_density(aes(x=two_Z)) +
+  geom_line(data=ndata, aes(x = x, y = y), color = "red")
+  
+```
+
+```{r}
+# Example 5.12
+
+# EXAMPLE IN BOOK
+W <- log(abs(rnorm(10000)))
+plot(density(W),
+  main = "Density of log|Z|",
+  xlab = "log|Z|"
+)
+
+# EXAMPLE IN TIDYVERSE
+logdata <- tibble(
+  Z = rnorm(10000),
+  W = log(abs(Z))
+)
+
+ggplot(logdata) +
+  geom_histogram(mapping = aes(x = W, y = after_stat(density)))
+```
+
+```{r}
+# Example 5.13
+
+X <- runif(10000, -1, 1)
+plot(density(X),
+  main = "Density of Unif[-1,1]",
+  xlab = "X"
+)
+curve(dunif(x, -1, 1), add = TRUE, col = "red")
+
+hist(X,
+  probability = TRUE,
+  main = "Histogram of Unif[-1,1]",
+  xlab = "X"
+)
+
+```
+
+```{r}
+# Example 5.14
+
+Z1 <- rnorm(10000)
+Z2 <- rnorm(10000)
+plot(density(Z1 + Z2),
+  main = "Sum of two standard normal rvs",
+  xlab = expression(Z[1] + Z[2])
+)
+curve(dnorm(x, 0, sqrt(2)), add = TRUE, col = "red")
+
+# TIDYVERSE
+
+Z1 <- rnorm(10000)
+Z2 <- rnorm(10000)
+
+`Z1+Z2` <- Z1 + Z2
+
+ggplot() +
+  geom_histogram(mapping = aes(x = `Z1+Z2`, y = after_stat(density)),
+                 binwidth = 0.2, color = "black", fill = "lightgray") +
+  geom_density(aes(x = `Z1+Z2`))
+
+ndata <- tibble(
+  x = seq(-6,6,0.1),
+  y = dnorm(x, 0, sqrt(2))
+)
+
+ggplot() +
+  geom_histogram(mapping = aes(x = `Z1+Z2`, y = after_stat(density)),
+                 binwidth = 0.2, color = "black", fill = "lightgray") +
+  geom_density(aes(x = `Z1+Z2`)) +
+  geom_line(data=ndata, aes(x = x, y = y), color = "red")
+
+```
+
