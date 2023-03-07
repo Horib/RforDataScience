@@ -153,6 +153,187 @@ t.test(normtemp$temp, conf.level = .98)
 ```
 ## 8.3 Hypothesis tests of the mean
 ```{r}
+# Example 8.8 (Sí bók, niðanfyri def. 8.7)
 
+# qt(.02 / 2, 130 - 1, lower.tail = FALSE)
+# abs((mean(normtemp$temp) - 98.6) / (sd(normtemp$temp) / sqrt(130)))
+
+# limit of rejected region: |T| > t_half_alpha = 2.355602
+t_half_alpha <- qt(.02 / 2, 130 - 1, lower.tail = FALSE)
+t_half_alpha
+
+# actual abs. value of the T-stastistics:
+X_bar <- mean(normtemp$temp)
+mu_0 <- 98.6
+S <- sd(normtemp$temp)
+n <- 130
+
+abs_T <- abs((X_bar - mu_0) / (S/sqrt(n)))
+abs_T
+
+# Since this is in the rejection region, we would reject the null hypothesis at the alpha = 0.02 level.
+```
+
+```{r}
+reject_regions <- tibble(
+  p_value = t.test(normtemp$temp, mu = 98.6)$p.value,
+  alpha = c(0.05, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001),
+  n = 130,
+  t_half_alpha = qt(alpha/2, n -1, lower.tail = FALSE),
+  abs_T = abs((X_bar - mu_0)/(S/sqrt(n))),
+  `abs_T > t_half_alpha` = (abs_T > t_half_alpha),
+  `p_value < alpha` = (p_value < alpha)
+)
+
+reject_regions
+
+# t_test <- t.test(normtemp$temp, mu = 98.6)
+# t_test$p.value
+```
+
+```{r}
+# Example 8.11
+
+# pt(-5.454823, df = 129) + pt(5.454823, df = 129, lower.tail = F)
+# t.test(normtemp$temp, mu = 98.6)
+
+xbar <- mean(normtemp$temp)
+xbar
+s <- sd(normtemp$temp)
+
+# T-statistics
+(xbar - 98.6)/(s/sqrt(130))
+-(xbar - 98.6)/(s/sqrt(130))
+
+# p-value
+pt(-5.454823, df = 129) + pt(5.454823, df = 129, lower.tail = F)
+2 * pt(5.454823, df = 129, lower.tail = F)
+2 * pt(5.454823, df = 129)
+
+# in R:
+t.test(normtemp$temp, mu =98.6)$p.value
+t.test(normtemp$temp, mu =98.6)
+
+broom::glance(t.test(normtemp$temp, mu =98.6))
+
+```
+
+```{r}
+n <- 130
+
+tdata <- tibble(
+  x = seq(-6, 6, 0.001),
+  y = dt(x, n -1)
+)
+
+# actual abs. value of the T-statistics:
+X_bar <- mean(normtemp$temp)
+mu_0 <- 98.6
+S <- sd(normtemp$temp)
+
+abs_T <-  abs((X_bar - mu_0) / (S/sqrt(n)))
+
+alpha <- 0.05
+# alpha <- 0.02
+t_half_alpha <- qt(alpha/2, n - 1, lower.tail = FALSE)
+
+# Density
+ggplot(data=tdata, aes(x = x, y = y))+
+  geom_area(data = filter(tdata, x < -t_half_alpha),
+            aes(x = x, y = y),
+            fill = "lightblue") +
+  geom_area(data = filter(tdata, x > t_half_alpha),
+            aes(x = x, y = y),
+            fill = "lightblue") +
+  geom_line(color = "black", linetype = "dashed") +
+  # -----
+  # geom_segment riggar betur pga at har er ikki eitt areal tvs geom_area sæst ikki
+  # geom_area(data = filter(tdata, x > abs_T),
+  #           aes(x = x, y = y),
+  #           fill = "red",
+  #           linewidth = 1,
+  #           outline.type = "full") +
+  #   geom_area(data = filter(tdata, x < - abs_T),
+  #           aes(x = x, y = y),
+  #           fill = "red") +
+  # -----
+  geom_segment(aes(x = abs_T, y = 0, xend = 6, yend = 0), color = "red", linewidth = 1) +
+  geom_segment(aes(x = -abs_T, y = 0, xend = -6, yend = 0), color = "red", linewidth = 1) +
+  scale_x_continuous(breaks = seq(-6, 6, 1))
+
+```
+
+```{r}
+# Example 8.12
+
+cavendish <- HistData::Cavendish
+ggplot(cavendish, aes(x = "", y = density3)) +
+  geom_boxplot(na.rm = TRUE) +
+  geom_point(na.rm = TRUE) +
+  coord_flip()
+```
+
+```{r}
+t.test(cavendish$density3, mu = 5.515)
+broom::glance(t.test(cavendish$density3, mu = 5.515))
+```
+
+```{r}
+# Example 8.15, Exponsential random varsiable X with rate lambda = 1, gevur mu = E(x) = 1
+
+# 4.5.2 Exponential random variable X with rate lambda
+# f(x) = lambda exp(-lambda x), x > 0
+# E(x) = 1/lambda
+
+mean(replicate(10000, t.test(rexp(20,1), mu = 1)$p.value < 0.05))
+```
+
+```{r}
+# Try it your self
+mean(replicate(10000, t.test(rexp(50, 1), mu = 1)$p.value < 0.1))
+mean(replicate(15000, t.test(rexp(50, 1), mu = 1)$p.value < 0.01))
+mean(replicate(20000, t.test(rexp(50, 1), mu = 1)$p.value < 0.001))
+```
+
+```{r}
+effectiveError <- sapply(c(.1, .05, .01, .001), function(y){
+  sapply(c(10, 20, 50, 100, 200), function(x){
+    mean(replicate(20000, t.test(rexp(x,1), mu = 1)$p.value < y))
+  })
+})
+colnames(effectiveError) <- c(".1", ".05", ".01", ".001")
+rownames(effectiveError) <- c("10", "20", "50", "100", "200")
+effectiveError
+```
+
+```{r}
+params <- crossing(n = c(10, 20, 50, 100, 200),
+                   alpha = c(.1, .05, .01, .001))
+params
+
+type_error1 <- tibble(
+  n = params$n,
+  alpha = params$alpha,
+  effective_error = 
+    map2(n, alpha, ~mean(replicate(20000, t.test(rexp(.x, 1), mu = 1)$p.value < .y)))
+) %>%
+  mutate(
+    effective_error = unlist(effective_error),
+    alpha = as_factor(alpha)
+  )
+
+type_error1
+```
+
+```{r}
+ggplot(type_error1, aes(x = n, y = effective_error, color = alpha)) +
+  geom_point(aes()) +
+  geom_line() +
+  scale_y_continuous(breaks = seq(0, 0.16, 0.02)) +
+  geom_hline(yintercept = params$alpha, linetype = "dashed") 
+  # geom_hline(yintercept = 0.001, linetype = "dashed", color = "red") +
+  # geom_hline(yintercept = 0.01, linetype = "dashed", color = "green") +
+  # geom_hline(yintercept = 0.05, linetype = "dashed", color = "cyan") +
+  # geom_hline(yintercept = 0.1, linetype = "dashed", color = "violet") 
 ```
 
