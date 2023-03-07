@@ -185,3 +185,273 @@ setdiff(maxima_departure_times, minmax_departure_times)
 
 ```
 
+## 5.4 Central Limit Theorem
+```{r}
+n <-100
+
+Xbar <- mean(rpois(n, 2))
+(Xbar - 2) / (sqrt(2) / sqrt(n))
+
+Z <- replicate(10000, {
+  Xbar <- mean(rpois(n, 2))
+  (Xbar - 2) / (sqrt(2) / sqrt(n))
+})
+
+ndata <- tibble(
+  x = seq(-4,4,0.1),
+  y = dnorm(x, 0, 1)
+)
+
+ggplot() +
+  geom_density(aes(x = Z)) +
+  geom_line(data=ndata, aes(x = x, y = y), color = "red")
+```
+
+```{r}
+n <-5000
+
+Z <- replicate(10000, {
+  Xbar <- mean(rexp(n, 1/3))
+  (Xbar - 3) / (3 / sqrt(n))
+})
+
+ndata <- tibble(
+  x = seq(-4,4,0.1),
+  y = dnorm(x, 0, 1)
+)
+
+ggplot() +
+  geom_density(aes(x = Z)) +
+  geom_line(data=ndata, aes(x = x, y = y), color = "red")
+
+```
+
+```{r}
+# Start with lots of zeros
+skewdata <- replicate(2000, 0)
+# Add a few moderately sized values
+skewdata <- c(skewdata, rexp(200, 1 / 10))
+# Add a few large values
+skewdata <- c(skewdata, seq(100000, 500000, 50000))
+
+mu <- mean(skewdata)
+sig <- sd(skewdata)
+
+
+n <- 1000
+
+Z <- replicate(10000, {
+  Xbar <- mean(sample(skewdata, n, TRUE))
+  (Xbar - mu) / (sig / sqrt(n))
+})
+
+ndata <- tibble(
+  x = seq(-4, 4, 0.1),
+  y = dnorm(x, 0, 1)
+)
+
+ggplot() +
+  geom_histogram(aes(x = Z, y = after_stat(density)),
+                 binwidth = 1,
+                 color = "black", fill = "lightgray" ) +
+  geom_line(data=ndata, aes(x = x, y = y), colour = "red")
+```
+
+```{r}
+# Check the remark below defining 5.24
+
+df1 <- 2
+df2 <- 3
+
+# random sample 10000 values from chi-distribution with 2 def
+X <- rchisq(10000, df1)
+# random sample 10000 values from chi-distribution with 3 def
+Y <- rchisq(10000, df2)
+
+df <- df1 + df2
+
+chidata <- tibble(
+  x = seq(0,25,0.1),
+  y = dchisq(x, df)
+)
+
+# Density
+ggplot() +
+  geom_density(aes(x = X + Y)) +
+  geom_line(data=chidata, aes(x = x, y = y), color ="red")
+```
+
+```{r}
+n <- 4
+mu <- 5
+sigma <- 9
+
+S2 <- replicate(10000, ((n-1)/sigma^2) * sd(rnorm(n, mu, sigma))^2)
+
+chidata <- tibble(
+  x = seq(0, 25, 0.1),
+  y = dchisq(x, n -1)
+)
+
+# Density
+ggplot() +
+  geom_histogram(aes(x = S2, y = after_stat(density)),
+                 binwidth = 1,
+                 color = "black", fill = "lightgray") +
+  geom_line(data=chidata, aes(x = x, y = y), color = "red")
+```
+
+```{r}
+t <- replicate(10000, {
+  X <- rnorm(6,3,4)
+  (mean(X) - 3) / (sd(X) / sqrt(6))
+})
+
+n <- 6
+
+tdata <- tibble(
+  x = seq(-10, 10, 0.1),
+  y = dt(x, n -1)
+)
+
+# Density
+ggplot() +
+  geom_histogram(aes(x = t, y = after_stat(density)),
+                 binwidth = 1,
+                 color = "black", fill = "lightgray") +
+  geom_line(data=tdata, aes(x = x, y = y), color = "red")
+```
+
+## 5.6 Point estimators
+```{r}
+# Example 5.30 (unbiased estimator)
+
+# 5 random samples from a normal distribution with mean 1 and variance of 4
+mean(rnorm(5,1,2))
+
+mean(replicate(10000, mean(rnorm(5,1,2))))
+
+```
+```{r}
+# Example 5.31
+
+# Estimate variance 
+sd(rnorm(5,1,2))^2
+
+mean(replicate(10000, sd(rnorm(5,1,2))^2))
+```
+
+```{r}
+# Example 5.32
+
+n <- 5
+mu <- 1
+sd <- 2
+
+# biased estimator of sd^2
+replicate(
+  7,
+  mean(replicate(10000, {
+    X <- rnorm(n, mu, sd)
+    (1 / n) * sum((X - mean(X))^2)
+  }))
+)
+
+# unbiased estimator of sd^2
+replicate(
+  7,
+  mean(replicate(10000, {
+    X <- rnorm(n, mu, sd)
+    (1 / (n-1)) * sum((X - mean(X))^2)
+  }))
+)
+
+```
+
+```{r}
+# Example 5.33
+
+n <- 10
+mu <- 1
+sd <- 2
+
+# biased estimator of sd^2
+S <- replicate(
+  7,
+  mean(replicate(10000, {
+    X <- rnorm(n, mu, sd)
+    sd(X)
+  }))
+)
+
+# MSE
+mean((S - mu)^2)
+
+# Bias S - sd_givid
+bias_estimate <- mean(replicate(10000, {
+  x <- rnorm(n, mu, sd)
+  s <- sd(x)
+  (s - sd)
+}))
+
+# Variance
+variant_estimate <- var(replicate(10000, {
+  x <- rnorm(n, mu, sd)
+  s <- sd(x)
+  (s - sd)
+}))
+bias_estimate^2 + variant_estimate
+
+```
+
+```{r}
+# Example 3.34
+
+n <- 20
+mu <- 0
+sd <- 2
+
+# biased estimator of sd^2
+s2 <- replicate(10000, {
+    X <- rnorm(n, mu, sd)
+    var(X)
+  })
+
+# MSE
+mean((s2 - sd^2)^2)
+
+# sí bók
+var(s2)
+
+# Bias S - sd_givid
+hat_sigma2 <- replicate(10000, {
+  x <- rnorm(n, mu, sd)
+  xbar <- mean(x)
+  1 / 20 * sum((x - xbar)^2)
+})
+var(hat_sigma2)
+
+mean(hat_sigma2 -4)
+
+var(hat_sigma2) - mean(hat_sigma2 - 4)^2
+
+mean((hat_sigma2 - 4)^2)
+
+
+```
+
+```{r}
+# MSE for the unbiased estimator
+mean((s2 - 4)^2)
+
+# MSE for biased estimator iw lower
+mean((hat_sigma2 - 4)^2)
+
+# Variance of unbiased estimator
+var(s2)
+
+# Variance of the biased estimator is lower
+var(hat_sigma2)
+
+```
+

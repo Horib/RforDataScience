@@ -135,7 +135,7 @@ for (i in sigma_vec) {
 
 ggplot(ndata) +
   # geom_bar(aes(x, y), stat = "identity", width = 0.01) +
-  geom_line(aes(x, y, color = "a. dnorm(x, mu = 0, sigma)")) +
+  # geom_line(aes(x, y, color = "a. dnorm(x, mu = 0, sigma)")) +
   geom_line(aes(x, pnorm, color ="b. pnorm(x, mu = 0, sigma)")) +
   ylab("pdf") +
   facet_wrap(~ sigma, labeller = label_both)
@@ -173,7 +173,7 @@ ggplot(ndata) +
 # Example 4.22
 
 # what percentage of dog pregnancies last 60 days or fewer?
-pnorm(60, 63, 2)
+pnorm(180, 177, 2)
 
 # What percentage of dog pregnancies last 67 days or more?
 1 - pnorm(67, 63, 2)
@@ -189,6 +189,8 @@ dog_data <- tibble(x = seq(50, 75, 0.01),
                    mu = 63,
                    sigma = 2,
                    y = dnorm(x, mu, sigma))
+dog_data
+
 ggplot(dog_data) +
   geom_area(data=filter(dog_data,
                         x >= qnorm(0.05, 63, 2),

@@ -1,0 +1,158 @@
+---
+title: "Probability, Statistics and Data - 8 Interference of the Mean"
+author: "RH"
+date: "2023-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+options(dplyr.summarise.inform = FALSE)
+
+# install fosdata
+# ------------------------------
+# install.packages("remotes") # if needed
+# remotes::install_github("speegled/fosdata")
+
+# install tidyverse
+# ------------------------------
+# install.packages("tidyverse")
+library(tidyverse)
+```
+
+## 8.1 Sampling distribution of the sample mean
+```{r}
+brake <- fosdata::brake
+
+# ?brake()
+
+brake
+```
+
+```{r}
+brake %>%
+  tidyr::pivot_longer(
+    cols = matches("^lat"),
+    names_to = "type", values_to = "time"
+  ) %>%
+  ggplot(aes(x = type, y = time, color = age_group)) +
+  geom_boxplot()
+```
+
+```{r}
+n <- 3
+mu <- 5
+sigma <- 1
+
+t <- replicate(10000, {
+  X <- rnorm(n, mu, sigma)
+  (mean(X) - mu) / (sd(X) / sqrt(n))
+})
+
+tdata <- tibble(
+  x = seq(-3, 3, 0.1),
+  y = dt(x, n-1)
+)
+
+# Density 
+ggplot() +
+  geom_histogram(aes(x = t, y = after_stat(density)),
+                 binwidth = 1,
+                 color = "black", fill = "lightgray",
+                 na.rm = TRUE) +
+  geom_density(aes(x = t), na.rm = TRUE) +
+  geom_line(data=tdata, aes(x = x, y = y), color = "red") +
+  scale_x_continuous(limits = c(-3, 3))
+```
+
+```{r}
+tdata <- NULL
+
+df_vec <- c(5, 20, 50, 500)
+for(i in df_vec){
+  tb_data <- NULL
+  tb_data <- tibble(
+    df = i,
+    x = seq(-3,3,0.1),
+    y = dt(x, df)
+  )
+  tdata <- rbind(tdata, tb_data)
+}
+
+tdata
+
+ggplot(tdata) +
+  geom_line(aes(x, y, color = factor(df))) + # Theoretical
+  geom_line(aes(x, y = dnorm(x))) + # Normal fordeiling
+  ylab("pdf (dt)") +
+  # facet_wrap(~ df, labeller = label_both) +
+  guides(color=guide_legend(title="df"))
+  
+```
+
+```{r}
+df <- 3
+
+pt(-2.5, df) - pnorm(-2.5)
+
+# Relative difference
+pt(-2.5, df) / pnorm(-2.5)
+```
+
+```{r}
+# 
+
+alfa <- 0.1
+half_alfa <- alfa/2
+n <- 10
+df <- n-1
+mu <- 6
+sigma <- 8
+
+t_half_alfa <- qt(half_alfa, df, lower.tail = FALSE)
+
+mean(replicate(10000, {
+  X <- rnorm(n, mu, sigma) # sample of size 10
+  Xbar <- mean(X) # sample mean
+  SE <- sd(X) / sqrt(n) # standard error
+  (Xbar - t_half_alfa * SE < mu) & (mu < Xbar + t_half_alfa * SE) # Lægra & Hægra greinasn
+}))
+```
+
+## 8.2 Confidence intervals for the mean
+```{r}
+normtemp <- fosdata::normtemp
+
+str(normtemp)
+
+as_tibble(normtemp)
+```
+
+```{r}
+ggplot(normtemp, aes(x = "", y = temp)) +
+  geom_boxplot(notch = TRUE) +
+  coord_flip()
+
+```
+
+```{r}
+# using Definition 8.2, we have
+
+xbar <- mean(normtemp$temp)
+s <- sd(normtemp$temp)
+lower_ci <- xbar - s / sqrt(130) * qt(.99, df = 129)
+upper_ci <- xbar + s / sqrt(130) * qt(.99, df = 129)
+
+lower_ci
+upper_ci
+
+# The 98% confidence interval is (98.1, 98.4). The R command that finds a confidence interval for the mean in one easy step is t.test
+
+t.test(normtemp$temp, conf.level = .98)
+```
+## 8.3 Hypothesis tests of the mean
+```{r}
+
+```
+
