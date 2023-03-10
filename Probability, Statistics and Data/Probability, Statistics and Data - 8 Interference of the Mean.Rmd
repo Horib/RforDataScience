@@ -324,7 +324,8 @@ type_error1 <- tibble(
 
 type_error1
 ```
-
+## 8.5
+## 8.5.2 Skew
 ```{r}
 ggplot(type_error1, aes(x = n, y = effective_error, color = alpha)) +
   geom_point(aes()) +
@@ -335,5 +336,279 @@ ggplot(type_error1, aes(x = n, y = effective_error, color = alpha)) +
   # geom_hline(yintercept = 0.01, linetype = "dashed", color = "green") +
   # geom_hline(yintercept = 0.05, linetype = "dashed", color = "cyan") +
   # geom_hline(yintercept = 0.1, linetype = "dashed", color = "violet") 
+```
+## 8.5.3 Heavy tails and outliers
+```{r}
+# koda frá Figure 8.3
+
+tdata <- NULL
+df_vec <- c(1,2,3,4)
+for(i in df_vec){
+  tb_data <- NULL
+  tb_data <- tibble(
+    df = i,
+    x = seq(-8, 8, 0.1),
+    y = dt(x, df)
+    # pt = pt(x,df)
+  )
+  tdata <- rbind(tdata, tb_data)
+}
+
+# tdata
+
+ggplot(tdata) +
+  geom_line(aes(x, y, color = factor(df))) +
+  geom_line(aes(x, y = dnorm(x))) +
+  scale_x_continuous(breaks = seq(-8, 8, 2)) +
+  guides(color=guide_legend(title="dt(x, df)")) +
+  facet_wrap(~ df, labeller = label_both) +
+  ylab("pdf")
+
+```
+
+```{r}
+# Example 8.16
+
+# H_0: mu = 0,
+# H_a: mu != 0,
+# sample of n = 30 from the t-distribution with df = 3
+# alpha = 0.1
+
+# Estimate the effective type I error rate ...
+mean(replicate(20000, t.test(rt(30, 3), mu = 0)$p.value < .1))
+```
+
+## 8.6 Two sample hypothesis tests
+```{r}
+# Example 8.21
+
+brake <- fosdata::brake
+brake %>%
+  group_by(age_group) %>%
+  summarise(
+    mean = mean(latency_p2),
+    sd = sd(latency_p2),
+    # skew = e1071::skewness(latency_p2),
+    N = n()
+  )
+
+ggplot(brake, aes(x = age_group, y = latency_p2)) +
+  geom_point() +
+  geom_boxplot()
+
+t.test(latency_p2 ~ age_group, data = brake)
+
+broom::glance(t.test(latency_p2 ~ age_group, data = brake))
+```
+
+```{r}
+cows_small <- fosdata::cows_small
+cows_small
+
+ggplot(cows_small, aes(sample = tk_0_75 - tk_12)) +
+  geom_qq() +
+  geom_qq_line()
+
+ggplot(cows_small) +
+  geom_boxplot(aes(x = "1. tk_12", y = tk_12)) +
+  geom_boxplot(aes(x = "2. tk_0_75", y = tk_0_75)) +
+  geom_boxplot(aes(x = "3. tk_0_75- tk_12", y = tk_0_75-tk_12)) +
+  xlab("Dysa og munur á dysum") +
+  ylab("Hita-broyting")
+
+broom::glance(t.test(cows_small$tk_12, cows_small$tk_0_75, paired = TRUE))
+  
+```
+
+## 8.7 Type II errors and power
+```{r}
+dat <- rnorm(130, 78, 6.67)
+t_stat <- (mean(dat) - 80) / (sd(dat) / sqrt(130))
+t_stat
+qt(.005, 129) # Critical value
+
+# dat <- rnorm(130, 78, 6.67)
+
+# A type II error is failing to reject the null when it is false
+t.test(dat, mu = 80)$p.value > .01
+
+# We get about a 0.2136 chance for a type II error in this case, or a power of 0.7865
+simdata <- replicate(10000, {
+  dat <- rnorm(130, 78, 6.67)
+  t.test(dat, mu = 80)$p.value > .01
+})
+mean(simdata)
+
+# The power of a test is defined to be one minus the probability of the type II error.
+1 - mean(simdata)
+```
+
+```{r}
+# Example 8.26
+# with the experimental setup of Example 8.25, compute the power exactly.
+
+power.t.test(n = 130,
+             delta = 2,
+             sd = 6.67,
+             sig.level = 0.01,
+             type = "one")
+```
+
+```{r}
+# Example 8.27
+# How large a sample is needed to detect a clinically significant difference in body temperature from 98.6 degrees with a power of 0.8?
+
+power.t.test(delta = 0.2,
+             sd = 0.3,
+             sig.level = 0.01,
+             power = 0.8,
+             type = "one")
+
+# Power around 80-90 % is good. (higer the beetter)
+```
+## 8.8 Resampling (nevna stutt)
+```{r}
+# Example 8.29
+
+brake_old <- fosdata::brake %>%
+  filter(age_group == "Old")
+ggplot(brake_old, aes(x = latency_p1)) +
+  geom_histogram(na.rm = TRUE) +
+  scale_x_continuous(limits = c(300, 1300))
+
+# brake_old$latency_p1
+# sample(brake_old$latency_p1, replace = TRUE)
+
+latency_p1_resample <- sample(brake_old$latency_p1, replace = TRUE)
+
+data.frame(latency_p1_resample) %>% ggplot(aes(x = latency_p1_resample)) +
+  geom_histogram() +
+  scale_x_continuous(limits = c(300, 1300)) +
+  geom_vline(xintercept = mean(latency_p1_resample), color = "red")
+```
+
+```{r}
+Xbar <- replicate(10000, {
+  brake_lat <- sample(brake_old$latency_p1, replace = TRUE)
+  mean(brake_lat)
+})
+data.frame(Xbar) %>% ggplot(aes(x = Xbar)) +
+  geom_histogram()
+
+```
+
+```{r}
+# Example 8.31
+
+quantile(Xbar, c(.025, .975))
+t.test(brake_old$latency_p1)$conf.int
+```
+
+```{r}
+# Example 8.32
+
+mean(brake_old$latency_p1, trim = 0.1)
+
+Xbar_trimmed <- replicate(10000, {
+  latency_p1_resample <- sample(brake_old$latency_p1, replace = TRUE)
+  mean(latency_p1_resample, trim = 0.1)
+})
+quantile(Xbar_trimmed, c(.025, .975))
+```
+
+## Chapter 10 Tabular Data
+## 10.2....
+```{r}
+tb_bino <- tibble(
+  x = seq(0, 25, 1),
+  y = dbinom(x, 104, 0.106)
+)
+
+# H_0: p = 0.106
+# H_a: p != 0.106
+
+ggplot(tb_bino) +
+  geom_bar(aes(x, y), stat = "identity") +
+  scale_x_continuous(breaks = seq(0, 25, 1)) +
+  scale_y_continuous(breaks = seq(0, 0.2, 0.01)) +
+  # 
+  geom_hline(yintercept = dbinom(7, 104, 0.106), lty = "dashed", color = "red") +
+  ylab("mpf")
+
+# p-value
+pbinom(7, 104, 0.106) + (1- pbinom(14, 104, 0.106))
+
+# we fail to reject the null hypothesis
+broom::glance(binom.test(7, 104, 0.106))
+```
+## 10.2.2 One sample test of proportions
+```{r}
+# Example 10.2
+n <- 104
+p <- 0.106
+
+# normal approximation to binomial
+mu <- n*p
+sd <- sqrt(n*p*(1-p))
+ndata <- tibble(x = seq(0, 25, 0.01),
+                y = dnorm(x, mu, sd))
+
+ggplot(data=ndata, aes(x, y)) +
+  geom_area(data=filter(ndata,
+                        x <= 7),
+            aes(x = x, y = y),
+            fill = "lightblue") +
+  geom_area(data=filter(ndata,
+                        x >= 15),
+            aes(x = x, y = y),
+            fill = "lightblue") +
+  scale_x_continuous(breaks = seq(0, 25, 1)) +
+  scale_y_continuous(breaks = seq(0, 0.2, 0.01)) +
+  geom_line() +
+  geom_point(data=tb_bino, aes(x, y))
+
+# p-value
+2*pnorm(7, mu, sd)
+
+# p-value width continuity correction
+2*pnorm(7.5, mu, sd)
+
+# p-value with continuity correction is default in prop.test
+prop.test(x = 7, n = 104, p = 0.106)$p.value
+```
+
+```{r}
+
+prop.test(x = 7, n = 104, p = 0.106)
+
+?prop.test
+```
+
+## 10.3 x^2 tests
+```{r}
+# Example 10.7
+
+benford <- log10(1 + 1 / (1:9))
+round(benford, 2)
+
+rio <- fosdata::rio_instagram %>%
+  mutate(first_digit = stringr::str_extract(n_follower, "[0-9]")) %>%
+  filter(!is.na(first_digit))
+
+# rio
+
+# benford data
+# data = data.frame(x = 1:9, y = benford * nrow(rio))
+# data
+
+rio %>% ggplot(aes(x = first_digit)) +
+  geom_bar() +
+  geom_point(
+    data = data.frame(x = 1:9, y = benford * nrow(rio)),
+    aes(x, y), color = "red", size = 5
+  )
+
+table(rio$first_digit)
+chisq.test(table(rio$first_digit), p = benford)
 ```
 
